@@ -1,7 +1,7 @@
 from flask import Flask, request, make_response, jsonify
 from flask_cors import CORS
 from flask_migrate import Migrate
-
+from flask_restful import Api, Resource
 from models import db, Message
 
 app = Flask(__name__)
@@ -14,9 +14,10 @@ migrate = Migrate(app, db)
 
 db.init_app(app)
 
-@app.route('/messages', methods=['GET','POST'])
-def messages():
-    if request.method == 'GET':
+api = Api(app)
+
+class Messages(Resource):
+    def get(self):
         messages = [message.to_dict() for message in Message.query.all()]
         response = make_response(
             messages, 
@@ -24,7 +25,7 @@ def messages():
             {"Content-Type": "application/json"}
         )
         return response
-    elif request.method == 'POST':
+    def post(self):
         data = request.get_json()
         new_message = Message(
             body=data['body'],
@@ -38,20 +39,13 @@ def messages():
             201
         )
         return response
-        
 
-@app.route('/messages/<int:id>', methods=['PATCH','DELETE'])
-def messages_by_id(id):
-    message = Message.query.filter(Message.id == id).first()
+api.add_resource(Messages, '/messages')
 
-    if message == None:
-        response_body = {
-            "message": "You messed up"
-        }
-        response = make_response(response_body, 418)
-        return response
+class MessagesById(Resource):
     
-    elif request.method == 'PATCH':
+    def patch(self, id):
+        message = Message.query.filter(Message.id == id).first()
         for attr in request.get_json():
             setattr(message, attr, request.get_json()[attr])
 
@@ -63,8 +57,9 @@ def messages_by_id(id):
             200
         )
         return response
-    
-    elif request.method == 'DELETE':
+
+    def delete(self, id):    
+        message = Message.query.filter(Message.id == id).first()
         db.session.delete(message)
         db.session.commit()
         response_body = {
@@ -78,6 +73,8 @@ def messages_by_id(id):
         )
 
         return response
+
+api.add_resource(MessagesById, '/messages/<int:id>')
 
 if __name__ == '__main__':
     app.run(port=5555)
