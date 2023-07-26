@@ -17,15 +17,7 @@ db.init_app(app)
 @app.route('/messages', methods=['GET','POST'])
 def messages():
     if request.method == 'GET':
-        messages = []
-        for message in Message.query.all():
-            m_dict = {
-                'id':message.id,
-                'username':message.username,
-                'body':message.body,
-                'created_at':message.created_at
-            }
-            messages.append(m_dict)
+        messages = [message.to_dict() for message in Message.query.all()]
         response = make_response(
             messages, 
             200,
@@ -40,12 +32,7 @@ def messages():
         )
         db.session.add(new_message)
         db.session.commit()
-        message_dict = {
-            'id':new_message.id,
-            'username':new_message.username,
-            'body':new_message.body,
-            'created_at':new_message.created_at
-        }
+        message_dict = new_message.to_dict()
         response = make_response(
             message_dict,
             201
@@ -70,12 +57,7 @@ def messages_by_id(id):
 
         db.session.add(message)
         db.session.commit()
-        message_dict = {
-            'id':message.id,
-            'username':message.username,
-            'body':message.body,
-            'created_at':message.created_at
-        }
+        message_dict = message.to_dict()
         response = make_response(
             message_dict,
             200
